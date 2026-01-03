@@ -1,188 +1,461 @@
 "use client";
-import { useState } from "react";
-import { FaCode, FaBook, FaPlay, FaCheckCircle, FaClock, FaCalendarAlt, FaChartLine, FaVideo, FaFileCode, FaExternalLinkAlt, FaTag } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import {
+  FaBook,
+  FaPlay,
+  FaClock,
+  FaChartLine,
+  FaVideo,
+  FaFileCode,
+  FaExternalLinkAlt,
+  FaTag,
+  FaPlus,
+  FaFilter,
+  FaEdit,
+  FaCheck,
+  FaTimes,
+  FaTrash,
+  FaCalendar,
+  FaFire,
+  FaGraduationCap,
+  FaCog,
+} from "react-icons/fa";
 
+// Constants
+const INITIAL_SUBJECTS = [
+  {
+    id: 1,
+    title: "Next.js 14 & App Router",
+    category: "Frontend",
+    progress: 75,
+    resources: 8,
+    lastStudied: "Today",
+    priority: "high",
+    description: "Master the new App Router and server components",
+  },
+  {
+    id: 2,
+    title: "TypeScript Advanced Patterns",
+    category: "Frontend",
+    progress: 45,
+    resources: 6,
+    lastStudied: "2 days ago",
+    priority: "medium",
+    description: "Advanced TS patterns for scalable applications",
+  },
+  {
+    id: 3,
+    title: "System Design",
+    category: "Backend",
+    progress: 30,
+    resources: 12,
+    lastStudied: "1 week ago",
+    priority: "medium",
+    description: "Design scalable distributed systems",
+  },
+  {
+    id: 4,
+    title: "Docker & Kubernetes",
+    category: "DevOps",
+    progress: 60,
+    resources: 10,
+    lastStudied: "3 days ago",
+    priority: "high",
+    description: "Containerization and orchestration",
+  },
+];
+
+const INITIAL_WEEKLY_STATS = {
+  hoursStudied: 18,
+  topicsCovered: 5,
+  resourcesCompleted: 12,
+  streak: 14,
+  dailyGoal: 2, // hours
+};
+
+const CATEGORIES = ["All", "Frontend", "Backend", "DevOps", "Database", "Cloud", "Tools"];
+
+const PRIORITY_COLORS = {
+  high: "bg-red-100 text-red-700",
+  medium: "bg-yellow-100 text-yellow-700",
+  low: "bg-blue-100 text-blue-700",
+};
+
+// Reusable Components
+const StatCard = ({ label, value, icon, trend, color = "text-slate-600" }) => (
+  <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+    <div className="flex items-center justify-between mb-2">
+      <p className="text-sm text-gray-500">{label}</p>
+      {icon && <div className="text-gray-400">{icon}</div>}
+    </div>
+    <p className={`text-2xl font-semibold ${color}`}>{value}</p>
+    {trend && <p className="text-xs text-green-600 mt-1">{trend}</p>}
+  </div>
+);
+
+const ProgressBar = ({ progress, showLabel = true, color = "bg-slate-600" }) => (
+  <div className="space-y-1">
+    {showLabel && (
+      <div className="flex justify-between text-xs">
+        <span>Progress</span>
+        <span>{progress}%</span>
+      </div>
+    )}
+    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div
+        className={`h-full ${color} rounded-full transition-all duration-500`}
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  </div>
+);
+
+const PriorityBadge = ({ priority }) => (
+  <span className={`px-2 py-1 rounded-full text-xs font-medium ${PRIORITY_COLORS[priority] || PRIORITY_COLORS.medium}`}>
+    {priority}
+  </span>
+);
+
+const ResourceItem = ({ resource, onToggle }) => (
+  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+    <div className="flex items-center gap-3">
+      <button
+        onClick={() => onToggle(resource.id)}
+        className={`w-5 h-5 rounded-full border flex items-center justify-center ${resource.completed ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}
+      >
+        {resource.completed && <FaCheck className="text-white text-xs" />}
+      </button>
+      <div>
+        <span className="text-sm font-medium text-gray-900">{resource.title}</span>
+        <span className="text-xs text-gray-500 ml-2">{resource.type}</span>
+      </div>
+    </div>
+    {resource.link && (
+      <a href={resource.link} target="_blank" rel="noopener noreferrer">
+        <FaExternalLinkAlt className="text-gray-400 hover:text-slate-600" />
+      </a>
+    )}
+  </div>
+);
+
+const SectionHeader = ({ title, icon, action }) => (
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      {icon}
+      {title}
+    </h2>
+    {action}
+  </div>
+);
+
+const AddButton = ({ onClick, label = "Add", icon = <FaPlus /> }) => (
+  <button
+    onClick={onClick}
+    className="px-3 py-2 bg-slate-600 text-white text-sm rounded-lg hover:bg-slate-700 transition-colors flex items-center gap-2"
+  >
+    {icon}
+    {label}
+  </button>
+);
+
+// Main Component
 export default function DevLogPage() {
-  const [activeTab, setActiveTab] = useState("current");
+  const [subjects, setSubjects] = useState(INITIAL_SUBJECTS);
   const [selectedSubject, setSelectedSubject] = useState(null);
+  const [weeklyStats, setWeeklyStats] = useState(INITIAL_WEEKLY_STATS);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [showAddSubject, setShowAddSubject] = useState(false);
+  const [newSubject, setNewSubject] = useState({ title: "", category: "Frontend", priority: "medium" });
+  const [studyTime, setStudyTime] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  // Learning subjects
-  const subjects = [
-    { 
-      id: 1, 
-      title: "Next.js 14 & App Router", 
-      category: "Frontend",
-      progress: 75,
-      resources: 8,
-      lastStudied: "Today",
-      priority: "high"
-    },
-    { 
-      id: 2, 
-      title: "TypeScript Advanced Patterns", 
-      category: "Frontend",
-      progress: 45,
-      resources: 6,
-      lastStudied: "2 days ago",
-      priority: "medium"
-    },
-    { 
-      id: 3, 
-      title: "System Design", 
-      category: "Backend",
-      progress: 30,
-      resources: 12,
-      lastStudied: "1 week ago",
-      priority: "medium"
-    },
-    { 
-      id: 4, 
-      title: "Docker & Kubernetes", 
-      category: "DevOps",
-      progress: 60,
-      resources: 10,
-      lastStudied: "3 days ago",
-      priority: "high"
-    },
-  ];
-
-  // Learning resources
-  const resources = {
-    "Next.js 14 & App Router": [
-      { id: 1, type: "Course", title: "Next.js Official Docs", link: "https://nextjs.org/docs", completed: true },
-      { id: 2, type: "Video", title: "App Router Deep Dive", link: "#", completed: true },
-      { id: 3, type: "Article", title: "Server Components Guide", link: "#", completed: false },
-      { id: 4, type: "Project", title: "Build a Blog Platform", link: "#", completed: false },
+  // Resources for selected subject
+  const [resources, setResources] = useState({
+    1: [
+      { id: 1, type: "Course", title: "Next.js Official Docs", completed: true, link: "https://nextjs.org/docs" },
+      { id: 2, type: "Video", title: "App Router Deep Dive", completed: true, link: "#" },
+      { id: 3, type: "Article", title: "Server Components Guide", completed: false, link: "#" },
+      { id: 4, type: "Project", title: "Build a Blog Platform", completed: false, link: "#" },
     ],
-    "TypeScript Advanced Patterns": [
-      { id: 5, type: "Course", title: "TypeScript Handbook", link: "#", completed: true },
-      { id: 6, type: "Video", title: "Advanced Types Tutorial", link: "#", completed: true },
-      { id: 7, type: "Article", title: "Generics Deep Dive", link: "#", completed: false },
-    ]
-  };
+    2: [
+      { id: 1, type: "Course", title: "TypeScript Handbook", completed: true, link: "https://www.typescriptlang.org/docs" },
+      { id: 2, type: "Article", title: "Advanced Generics", completed: false, link: "#" },
+    ],
+  });
 
-  // Weekly stats
-  const weeklyStats = {
-    hoursStudied: 18,
-    topicsCovered: 5,
-    resourcesCompleted: 12,
-    streak: 14
-  };
-
-  // Recent study sessions
-  const recentSessions = [
-    { id: 1, subject: "Next.js 14 & App Router", duration: "2h 15m", date: "Today", focus: 85 },
+  // Study sessions
+  const [recentSessions, setRecentSessions] = useState([
+    { id: 1, subject: "Next.js 14", duration: "2h 15m", date: "Today", focus: 85 },
     { id: 2, subject: "TypeScript", duration: "1h 30m", date: "Yesterday", focus: 90 },
     { id: 3, subject: "System Design", duration: "3h", date: "2 days ago", focus: 75 },
-  ];
+  ]);
 
-  // Upcoming goals
-  const upcomingGoals = [
-    { id: 1, title: "Complete Next.js Course", deadline: "Next week", priority: "high" },
-    { id: 2, title: "Build Portfolio Project", deadline: "2 weeks", priority: "medium" },
-    { id: 3, title: "Learn Docker Deployment", deadline: "3 weeks", priority: "medium" },
-  ];
+  // Learning goals
+  const [upcomingGoals, setUpcomingGoals] = useState([
+    { id: 1, title: "Complete Next.js Course", deadline: "Next week", priority: "high", completed: false },
+    { id: 2, title: "Build Portfolio Project", deadline: "2 weeks", priority: "medium", completed: false },
+    { id: 3, title: "Learn Docker Deployment", deadline: "3 weeks", priority: "medium", completed: false },
+  ]);
 
-  const categories = ["Frontend", "Backend", "DevOps", "Database", "Cloud"];
+  // Random learning suggestion
+  const [randomLearning] = useState({
+    topic: "JavaScript Event Loop",
+    reason: "Understanding async behavior improves debugging & performance",
+    estimatedTime: "30–45 min",
+    resources: [
+      { title: "MDN Event Loop Guide", link: "https://developer.mozilla.org" },
+      { title: "Visual Event Loop Explanation", link: "#" },
+    ],
+  });
+
+  // Filter subjects by category
+  const filteredSubjects = activeCategory === "All" 
+    ? subjects 
+    : subjects.filter(subject => subject.category === activeCategory);
+
+  // Timer functionality
+  useEffect(() => {
+    let interval;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setStudyTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerRunning]);
+
+  const formatTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Handlers
+  const handleAddSubject = () => {
+    if (!newSubject.title.trim()) return;
+    
+    const newSubjectObj = {
+      id: subjects.length + 1,
+      ...newSubject,
+      progress: 0,
+      resources: 0,
+      lastStudied: "Never",
+      description: "",
+    };
+    
+    setSubjects([...subjects, newSubjectObj]);
+    setNewSubject({ title: "", category: "Frontend", priority: "medium" });
+    setShowAddSubject(false);
+  };
+
+  const handleToggleResource = (subjectId, resourceId) => {
+    setResources(prev => ({
+      ...prev,
+      [subjectId]: prev[subjectId].map(resource =>
+        resource.id === resourceId 
+          ? { ...resource, completed: !resource.completed }
+          : resource
+      )
+    }));
+  };
+
+  const handleStartSession = () => {
+    if (!selectedSubject) {
+      alert("Please select a subject first!");
+      return;
+    }
+    setIsTimerRunning(true);
+  };
+
+  const handleEndSession = () => {
+    setIsTimerRunning(false);
+    if (studyTime > 0) {
+      const hours = Math.floor(studyTime / 3600);
+      const minutes = Math.floor((studyTime % 3600) / 60);
+      const duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+      
+      const newSession = {
+        id: recentSessions.length + 1,
+        subject: selectedSubject.title,
+        duration,
+        date: "Just now",
+        focus: Math.floor(Math.random() * 30) + 70,
+      };
+      
+      setRecentSessions([newSession, ...recentSessions.slice(0, 2)]);
+      setWeeklyStats(prev => ({
+        ...prev,
+        hoursStudied: prev.hoursStudied + hours + (minutes / 60),
+        topicsCovered: prev.topicsCovered + 1,
+      }));
+      setStudyTime(0);
+    }
+  };
+
+  const handleToggleGoal = (goalId) => {
+    setUpcomingGoals(goals =>
+      goals.map(goal =>
+        goal.id === goalId ? { ...goal, completed: !goal.completed } : goal
+      )
+    );
+  };
+
+  const handleDeleteSubject = (subjectId) => {
+    if (window.confirm("Are you sure you want to delete this subject?")) {
+      setSubjects(subjects.filter(s => s.id !== subjectId));
+      if (selectedSubject?.id === subjectId) {
+        setSelectedSubject(null);
+      }
+    }
+  };
+
+  const handleUpdateProgress = (subjectId, newProgress) => {
+    setSubjects(subjects.map(s =>
+      s.id === subjectId ? { ...s, progress: Math.min(100, Math.max(0, newProgress)) } : s
+    ));
+  };
 
   return (
-    <div className="h-full overflow-y-auto p-6 bg-gray-50">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="h-full overflow-y-auto p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
         {/* Header */}
-        <div className="flex justify-between items-start">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-3">
-              <FaFileCode className="text-blue-600" />
-              Dev Log
-            </h1>
-            <p className="text-gray-600 text-sm mt-1">Track your learning progress, resources, and development journey</p>
+            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">Dev Log</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Track your learning, progress, and daily development focus
+            </p>
           </div>
-          
-        </div>
+        </header>
 
-        {/* Tabs */}
-        <div className="flex space-x-1 border-b border-gray-200">
-          {["current", "resources", "progress"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 text-sm font-medium rounded-t-lg transition-all ${activeTab === tab
-                  ? "bg-white border-t border-l border-r border-gray-200 text-blue-600"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        {/* Main Content */}
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column: Subjects & Progress */}
+          {/* Left Column - 2/3 width */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Category Filter */}
+            <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${activeCategory === category
+                        ? 'bg-slate-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowAddSubject(true)}
+                className="px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 flex items-center gap-2 text-sm"
+              >
+                <FaPlus /> Add Subject
+              </button>
+            </div>
+
+            {/* Add Subject Form */}
+            {showAddSubject && (
+              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+                <h3 className="font-medium text-gray-900 mb-4">Add New Learning Subject</h3>
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Subject Title"
+                    value={newSubject.title}
+                    onChange={(e) => setNewSubject({...newSubject, title: e.target.value})}
+                    className="w-full p-3 border border-gray-300 rounded-lg"
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <select
+                      value={newSubject.category}
+                      onChange={(e) => setNewSubject({...newSubject, category: e.target.value})}
+                      className="p-3 border border-gray-300 rounded-lg"
+                    >
+                      {CATEGORIES.slice(1).map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={newSubject.priority}
+                      onChange={(e) => setNewSubject({...newSubject, priority: e.target.value})}
+                      className="p-3 border border-gray-300 rounded-lg"
+                    >
+                      <option value="low">Low Priority</option>
+                      <option value="medium">Medium Priority</option>
+                      <option value="high">High Priority</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleAddSubject}
+                      className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 flex-1"
+                    >
+                      Add Subject
+                    </button>
+                    <button
+                      onClick={() => setShowAddSubject(false)}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex-1"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Learning Subjects */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                  <FaBook className="text-blue-500" />
-                  Learning Subjects
-                </h2>
-                <button className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-                  + Add Subject
-                </button>
-              </div>
+              <SectionHeader
+                title="Learning Subjects"
+                icon={<FaBook className="text-slate-600" />}
+                action={<span className="text-sm text-gray-500">{filteredSubjects.length} subjects</span>}
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {subjects.map((subject) => (
-                  <div 
-                    key={subject.id} 
-                    className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${selectedSubject?.id === subject.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-100 hover:border-gray-200"
+                {filteredSubjects.map(subject => (
+                  <div
+                    key={subject.id}
+                    className={`p-4 rounded-lg border transition-all cursor-pointer hover:shadow-md ${selectedSubject?.id === subject.id
+                        ? 'border-slate-300 bg-gray-50'
+                        : 'border-gray-100 hover:bg-gray-50'
                       }`}
                     onClick={() => setSelectedSubject(subject)}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{subject.title}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            subject.category === "Frontend" ? "bg-blue-100 text-blue-700" :
-                            subject.category === "Backend" ? "bg-green-100 text-green-700" :
-                            subject.category === "DevOps" ? "bg-purple-100 text-purple-700" :
-                            "bg-gray-100 text-gray-700"
-                          }`}>
-                            {subject.category}
-                          </span>
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            subject.priority === "high" ? "bg-red-100 text-red-700" :
-                            "bg-yellow-100 text-yellow-700"
-                          }`}>
-                            {subject.priority}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-sm text-gray-500">{subject.resources} resources</span>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium text-gray-900">{subject.title}</h3>
+                      <PriorityBadge priority={subject.priority} />
                     </div>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Progress</span>
-                        <span className="font-medium text-gray-700">{subject.progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
-                        <div 
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${subject.progress}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <FaClock className="text-xs" />
-                          Last studied: {subject.lastStudied}
-                        </span>
-                        <button className="text-blue-600 hover:text-blue-700">
-                          Continue
+                    <p className="text-xs text-gray-500 mb-3">{subject.category} • {subject.resources} resources</p>
+                    
+                    <ProgressBar progress={subject.progress} />
+                    
+                    <div className="flex justify-between items-center mt-4">
+                      <span className="text-xs text-gray-500">Last studied: {subject.lastStudied}</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newProgress = prompt("Enter new progress (0-100):", subject.progress);
+                            if (newProgress !== null) {
+                              handleUpdateProgress(subject.id, parseInt(newProgress));
+                            }
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          Update
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSubject(subject.id);
+                          }}
+                          className="text-xs text-red-600 hover:text-red-800"
+                        >
+                          <FaTrash />
                         </button>
                       </div>
                     </div>
@@ -191,257 +464,165 @@ export default function DevLogPage() {
               </div>
             </div>
 
-            {/* Study Resources */}
-            {selectedSubject && resources[selectedSubject.title] && (
+            {/* Resources Section */}
+            {selectedSubject && resources[selectedSubject.id] && (
               <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-medium text-gray-900">
-                    Resources for {selectedSubject.title}
-                  </h2>
-                  <span className="text-sm text-gray-500">
-                    {resources[selectedSubject.title].filter(r => r.completed).length}/
-                    {resources[selectedSubject.title].length} completed
-                  </span>
-                </div>
+                <SectionHeader
+                  title={`Resources - ${selectedSubject.title}`}
+                  icon={<FaFileCode className="text-slate-600" />}
+                  action={
+                    <span className="text-sm text-gray-500">
+                      {resources[selectedSubject.id].filter(r => r.completed).length} / {resources[selectedSubject.id].length} completed
+                    </span>
+                  }
+                />
 
                 <div className="space-y-3">
-                  {resources[selectedSubject.title].map((resource) => (
-                    <div 
+                  {resources[selectedSubject.id].map(resource => (
+                    <ResourceItem
                       key={resource.id}
-                      className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded ${resource.completed ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-600"}`}>
-                          {resource.type === "Course" ? <FaBook /> :
-                           resource.type === "Video" ? <FaVideo /> :
-                           resource.type === "Article" ? <FaFileCode /> :
-                           <FaPlay />}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{resource.title}</p>
-                          <p className="text-sm text-gray-500">{resource.type}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 text-xs rounded-full ${resource.completed
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-700"
-                          }`}>
-                          {resource.completed ? "Completed" : "Pending"}
-                        </span>
-                        <a 
-                          href={resource.link}
-                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <FaExternalLinkAlt />
-                        </a>
-                      </div>
-                    </div>
+                      resource={resource}
+                      onToggle={(id) => handleToggleResource(selectedSubject.id, id)}
+                    />
                   ))}
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <button className="w-full py-3 text-center text-gray-600 border border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:text-gray-700 transition-colors">
-                    + Add Resource
-                  </button>
                 </div>
               </div>
             )}
 
-            {/* Study Sessions */}
+            {/* Recent Sessions */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                <FaClock className="text-purple-500" />
-                Recent Study Sessions
-              </h2>
-              
-              <div className="space-y-3">
-                {recentSessions.map((session) => (
-                  <div key={session.id} className="p-4 border border-gray-100 rounded-lg">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <p className="font-medium text-gray-900">{session.subject}</p>
-                        <p className="text-sm text-gray-500">{session.date}</p>
-                      </div>
-                      <span className="font-semibold text-blue-600">{session.duration}</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Focus Level</span>
-                        <span className="font-medium text-gray-700">{session.focus}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
-                        <div 
-                          className="bg-green-500 h-2 rounded-full"
-                          style={{ width: `${session.focus}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Stats & Goals */}
-          <div className="space-y-6">
-            {/* Weekly Stats */}
-            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                <FaChartLine className="text-green-500" />
-                Weekly Stats
-              </h2>
+              <SectionHeader
+                title="Recent Study Sessions"
+                icon={<FaChartLine className="text-slate-600" />}
+                action={<AddButton label="View All" />}
+              />
               
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Hours Studied</span>
-                  <span className="font-semibold text-gray-900">{weeklyStats.hoursStudied}h</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Topics Covered</span>
-                  <span className="font-semibold text-blue-600">{weeklyStats.topicsCovered}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Resources Completed</span>
-                  <span className="font-semibold text-green-600">{weeklyStats.resourcesCompleted}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Current Streak</span>
-                  <span className="font-semibold text-orange-600">{weeklyStats.streak} days</span>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-2">Weekly Learning Goal</p>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div className="w-3/4 bg-blue-500 h-2 rounded-full"></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">20 hours target (75% completed)</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Upcoming Goals */}
-            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Learning Goals</h3>
-              
-              <div className="space-y-3">
-                {upcomingGoals.map((goal) => (
-                  <div key={goal.id} className="p-3 border border-gray-100 rounded-lg">
-                    <div className="flex justify-between items-start mb-2">
+                {recentSessions.map(session => (
+                  <div key={session.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div className="flex justify-between items-center mb-3">
                       <div>
-                        <p className="font-medium text-gray-900">{goal.title}</p>
-                        <p className="text-sm text-gray-500">Deadline: {goal.deadline}</p>
+                        <span className="font-medium text-gray-900">{session.subject}</span>
+                        <span className="text-xs text-gray-500 ml-3">{session.date}</span>
                       </div>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        goal.priority === "high" ? "bg-red-100 text-red-700" :
-                        "bg-yellow-100 text-yellow-700"
-                      }`}>
-                        {goal.priority}
-                      </span>
+                      <span className="text-sm font-medium text-slate-600">{session.duration}</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
-                      <div className="w-1/3 bg-green-500 h-1.5 rounded-full"></div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span>Focus Level</span>
+                        <span>{session.focus}%</span>
+                      </div>
+                      <ProgressBar progress={session.focus} showLabel={false} color="bg-green-500" />
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                <FaTag className="text-purple-500" />
-                Learning Categories
-              </h3>
-              
-              <div className="space-y-2">
-                {categories.map((category) => (
-                  <div key={category} className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <span className="font-medium text-gray-900">{category}</span>
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                      {subjects.filter(s => s.category === category).length} subjects
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Notes */}
-            <div className="bg-blue-50 rounded-xl border border-blue-100 p-6">
-              <h3 className="font-medium text-gray-900 mb-2">Today's Focus</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Complete Next.js Server Actions section and practice with a small project.
-              </p>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Today's Progress</span>
-                  <span className="font-medium text-blue-600">2h 15m / 4h target</span>
-                </div>
-                <div className="w-full bg-white rounded-full h-2">
-                  <div className="w-1/2 bg-blue-500 h-2 rounded-full"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress Summary */}
-            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Progress Summary</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span className="text-sm text-gray-600">Completed</span>
-                  </div>
-                  <span className="font-medium text-gray-900">6 subjects</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <span className="text-sm text-gray-600">In Progress</span>
-                  </div>
-                  <span className="font-medium text-gray-900">4 subjects</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <span className="text-sm text-gray-600">Planned</span>
-                  </div>
-                  <span className="font-medium text-gray-900">3 subjects</span>
-                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Notes & Takeaways */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-          <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-            <FaFileCode className="text-green-500" />
-            Recent Takeaways
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-green-50 border border-green-100 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">Next.js Discovery</h4>
-              <p className="text-sm text-gray-600">
-                Server Components don't have access to browser APIs, making them ideal for data fetching.
-              </p>
+          {/* Right Column - 1/3 width */}
+          <div className="space-y-6">
+            {/* Random Learning */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+              <SectionHeader
+                title="Today's Random Learning"
+                icon={<FaGraduationCap className="text-slate-600" />}
+                action={
+                  <button className="text-sm text-slate-600 hover:text-slate-800">
+                    <FaCog />
+                  </button>
+                }
+              />
+
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                  <h3 className="text-lg font-semibold text-gray-900">{randomLearning.topic}</h3>
+                  <p className="text-sm text-gray-600 mt-2">{randomLearning.reason}</p>
+                  <div className="flex items-center gap-2 mt-3">
+                    <FaClock className="text-gray-400" />
+                    <span className="text-sm text-gray-500">{randomLearning.estimatedTime}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">Recommended Resources:</p>
+                  {randomLearning.resources.map((resource, index) => (
+                    <a
+                      key={index}
+                      href={resource.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex justify-between items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="text-sm text-gray-900">{resource.title}</span>
+                      <FaExternalLinkAlt className="text-gray-400 text-xs" />
+                    </a>
+                  ))}
+                </div>
+
+                <button className="w-full py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium">
+                  Start Learning This Now
+                </button>
+              </div>
             </div>
-            <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">TypeScript Tip</h4>
-              <p className="text-sm text-gray-600">
-                Use discriminated unions with literal types for better type safety in complex state management.
-              </p>
+
+            {/* Learning Goals */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+              <SectionHeader
+                title="Learning Goals"
+                icon={<FaCalendar className="text-slate-600" />}
+                action={<AddButton label="Add Goal" />}
+              />
+
+              <div className="space-y-3">
+                {upcomingGoals.map(goal => (
+                  <div key={goal.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleToggleGoal(goal.id)}
+                          className={`w-5 h-5 rounded-full border flex items-center justify-center ${goal.completed ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}
+                        >
+                          {goal.completed && <FaCheck className="text-white text-xs" />}
+                        </button>
+                        <div>
+                          <p className={`font-medium ${goal.completed ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                            {goal.title}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            <FaCalendar className="inline mr-1" />
+                            {goal.deadline}
+                          </p>
+                        </div>
+                      </div>
+                      <PriorityBadge priority={goal.priority} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="p-4 bg-purple-50 border border-purple-100 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">System Design</h4>
-              <p className="text-sm text-gray-600">
-                When designing APIs, always version them from the start to maintain backward compatibility.
-              </p>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+              <h3 className="font-medium text-gray-900 mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 flex flex-col items-center justify-center gap-2">
+                  <FaPlus className="text-slate-600" />
+                  <span className="text-sm">Add Resource</span>
+                </button>
+                <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 flex flex-col items-center justify-center gap-2">
+                  <FaChartLine className="text-slate-600" />
+                  <span className="text-sm">View Stats</span>
+                </button>
+                <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 flex flex-col items-center justify-center gap-2">
+                  <FaBook className="text-slate-600" />
+                  <span className="text-sm">Take Notes</span>
+                </button>
+                <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 flex flex-col items-center justify-center gap-2">
+                  <FaVideo className="text-slate-600" />
+                  <span className="text-sm">Record Session</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

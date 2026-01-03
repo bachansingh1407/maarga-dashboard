@@ -23,7 +23,7 @@ export default function ClientLayout({ children }) {
                             <Header />
                         </header>
 
-                        <main className="flex-1 overflow-y-auto">
+                        <main className="flex-1 overflow-y-auto bg-gray-200">
                             {children}
                         </main>
                     </div>

@@ -1,6 +1,8 @@
 "use client"
 import { useState, useEffect } from "react";
-import { FaBullseye, FaCoffee, FaSun, FaPlus, FaCheck, FaClock, FaFire, FaChartLine, FaHistory, FaTasks, FaCalendarAlt, FaBookOpen, FaChess, FaPen, FaCode } from "react-icons/fa";
+import { FaBullseye, FaCoffee, FaSun, FaPlus, FaCheck, FaClock, FaFire, FaChartLine, FaHistory, FaTasks, FaCalendarAlt, FaBookOpen, FaChess, FaPen, FaCode, FaEyeSlash, FaBell, FaMusic, FaMoon } from "react-icons/fa";
+import { MdCheckBoxOutlineBlank } from "react-icons/md";
+import { IoMdCheckboxOutline } from "react-icons/io";
 
 export default function Home() {
   const [currentTime, setCurrentTime] = useState("");
@@ -59,12 +61,6 @@ export default function Home() {
 
   const energyLevel = 7; // out of 10
 
-  const quickActions = [
-    { id: 1, icon: FaBullseye, label: "Today's Focus", color: "bg-blue-100 text-blue-600", url: "/" },
-    { id: 2, icon: FaChartLine, label: "View Stats", color: "bg-green-100 text-green-600", url: "/stats" },
-    { id: 3, icon: FaHistory, label: "Recent Activity", color: "bg-purple-100 text-purple-600", url: "/activity" },
-  ];
-
   // Activity from different pages
   const recentActivity = [
     { id: 1, icon: FaBookOpen, page: "Reading", action: "Finished 'Clean Code' chapter", time: "2h ago" },
@@ -101,8 +97,8 @@ export default function Home() {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-6 bg-gray-50">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="h-full overflow-y-auto p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Top Section */}
 
         <div className="flex justify-between items-start">
@@ -117,28 +113,28 @@ export default function Home() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-medium">
           <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
             <p className="text-sm text-gray-500 mb-1">Focus Hours</p>
-            <p className="text-2xl font-semibold text-blue-600">{stats.focusHours}h</p>
+            <p className="text-2xl font-semibold text-slate-600">{stats.focusHours}h</p>
             <p className="text-xs text-green-600 mt-1">+1.2h from yesterday</p>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
             <p className="text-sm text-gray-500 mb-1">Tasks Done</p>
-            <p className="text-2xl font-semibold text-green-600">{stats.tasksCompleted}</p>
+            <p className="text-2xl font-semibold text-slate-600">{stats.tasksCompleted}</p>
             <p className="text-xs text-green-600 mt-1">2 remaining</p>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
             <p className="text-sm text-gray-500 mb-1">Productivity</p>
-            <p className="text-2xl font-semibold text-purple-600">{stats.productivity}%</p>
+            <p className="text-2xl font-semibold text-slate-600">{stats.productivity}%</p>
             <p className="text-xs text-green-600 mt-1">Optimal level</p>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
             <p className="text-sm text-gray-500 mb-1">Energy Level</p>
-            <p className="text-2xl font-semibold text-orange-600">{energyLevel}/10</p>
+            <p className="text-2xl font-semibold text-slate-600">{energyLevel}/10</p>
             <p className="text-xs text-yellow-600 mt-1">Good for focus</p>
           </div>
         </div>
@@ -149,7 +145,7 @@ export default function Home() {
           <div className="lg:col-span-2 space-y-6">
             {/* Today's Focus */}
             <div className="mb-8">
-              <div className="border-l-4 border-blue-500 pl-4 mb-3">
+              <div className="border-l-4 border-slate-600 pl-4 mb-3">
                 <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Today's Focus</h2>
               </div>
 
@@ -163,7 +159,7 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <div className="flex-1 bg-gray-100 rounded-full h-2">
                     <div
-                      className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                      className="bg-slate-500 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${(energyLevel / 10) * 100}%` }}
                     ></div>
                   </div>
@@ -193,13 +189,13 @@ export default function Home() {
                   onChange={(e) => setNewTask(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addTask()}
                   placeholder="Add a new task..."
-                  className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-slate-500"
                 />
                 <button
                   onClick={addTask}
-                  className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="outline-0 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 flex items-center gap-2 text-sm"
                 >
-                  <FaPlus />
+                  <FaPlus /> Add Task
                 </button>
               </div>
 
@@ -208,31 +204,31 @@ export default function Home() {
                 {tasks.map((task) => (
                   <div
                     key={task.id}
-                    className={`flex items-center justify-between p-4 rounded-xl border ${task.completed ? 'border-green-100 bg-green-50' : 'border-gray-100'
+                    className={` shadow flex items-center justify-between p-4 rounded-xl border ${task.completed ? 'border-green-100 bg-green-50' : 'border-gray-100'
                       }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 w-full">
                       <button
                         onClick={() => toggleTask(task.id)}
-                        className={`w-6 h-6 rounded-full border flex items-center justify-center ${task.completed
-                          ? 'bg-green-500 border-green-500'
-                          : 'border-gray-300'
-                          }`}
+                        className={`flex items-center justify-center`}
                       >
-                        {task.completed && <FaCheck className="text-white text-xs" />}
+                        {task.completed ? <IoMdCheckboxOutline className="text-slate-600 text-xl" /> : <MdCheckBoxOutlineBlank className="text-slate-600 text-xl" />}
                       </button>
-                      <div>
-                        <p className={`font-medium ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
-                          {task.text}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start w-full">
+                          <p className={`font-medium text-sm ${task.completed ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {task.text}
+                          </p>
                           <span className={`px-2 py-1 text-xs rounded-full ${task.priority === 'high' ? 'bg-red-100 text-red-700' :
                             task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
                               'bg-green-100 text-green-700'
                             }`}>
                             {task.priority}
                           </span>
-                          <span className="text-sm text-gray-500 flex items-center gap-1">
+                        </div>
+                        <div className="flex items-center gap-2">
+
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
                             <FaClock className="text-xs" /> {task.time}
                           </span>
                         </div>
@@ -259,10 +255,10 @@ export default function Home() {
                   return (
                     <div key={activity.id} className="flex items-start gap-3">
                       <div className="p-3 bg-purple-50 rounded-lg">
-                        <Icon className="text-purple-600" />
+                        <Icon className="text-slate-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-600">{activity.action}</p>
+                        <p className="font-medium text-gray-600 text-sm">{activity.action}</p>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500">{activity.page}</span>
                           <span className="text-xs text-gray-400">{activity.time}</span>
@@ -274,25 +270,10 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Quick Tools */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-              <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-6">Quick Tools</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <button className="flex flex-col items-center gap-2 p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors border border-amber-100">
-                  <FaCoffee className="text-amber-600 text-xl" />
-                  <span className="text-sm font-medium text-gray-700">Take Break</span>
-                </button>
-                <button className="flex flex-col items-center gap-2 p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors border border-blue-100">
-                  <FaSun className="text-blue-600 text-xl" />
-                  <span className="text-sm font-medium text-gray-700">Day Mode</span>
-                </button>
-              </div>
-            </div>
-
             {/* Upcoming Events */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider flex items-center gap-2">
                   <FaCalendarAlt className="text-green-500" />
                   Today's Schedule
                 </h2>
@@ -300,9 +281,9 @@ export default function Home() {
 
               <div className="space-y-4">
                 {upcomingEvents.map((event) => (
-                  <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div key={event.id} className="shadow  border border-gray-200 flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <FaClock className="text-blue-600" />
+                      <FaClock className="text-slate-600" />
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-gray-800">{event.title}</p>
@@ -314,14 +295,38 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* Motivation Section */}
-        <div className="bg-linear-to-r from-gray-50 to-gray-100 rounded-2xl p-8 border border-gray-200">
-          <div className="text-center">
-            <p className="text-xl text-gray-800 font-medium mb-2">"Progress, not perfection."</p>
-            <p className="text-gray-600">Keep moving forward, one step at a time.</p>
+        {/* Quick Tools */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-6">Quick Tools</h2>
+          <div className="grid grid-cols-6 gap-3">
+            <button className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-300">
+              <FaCoffee className="text-slate-600 text-xl" />
+              <span className="text-sm font-medium text-gray-700">Take Break</span>
+            </button>
+            <button className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-300">
+              <FaSun className="text-slate-600 text-xl" />
+              <span className="text-sm font-medium text-gray-700">Day Mode</span>
+            </button>
+            <button className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-300">
+              <FaMoon className="text-slate-600 text-xl" />
+              <span className="text-sm font-medium text-gray-700">Night Mode</span>
+            </button>
+            <button className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-300">
+              <FaMusic className="text-slate-600 text-xl" />
+              <span className="text-sm font-medium text-gray-700">Focus Music</span>
+            </button>
+            <button className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-300">
+              <FaBell className="text-slate-600 text-xl" />
+              <span className="text-sm font-medium text-gray-700">Set Reminder</span>
+            </button>
+            <button className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-300">
+              <FaEyeSlash className="text-slate-600 text-xl" />
+              <span className="text-sm font-medium text-gray-700">Hide Distractions</span>
+            </button>
           </div>
         </div>
+
+
       </div>
     </div>
   );

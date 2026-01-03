@@ -1,4 +1,5 @@
 import { FaFire } from "react-icons/fa";
+import Logo from "../common/Logo";
 
 export default function Header() {
     const currentStreak = 7; // Example streak
@@ -13,8 +14,8 @@ export default function Header() {
 
             {/* Left: Dashboard & Date */}
             <div className="flex items-center gap-4">
-                <h1 className="text-xl font-semibold text-[#FF885B]">Dashboard</h1>
-                <span className="text-sm text-gray-500">{formattedDate}</span>
+                {/* <Logo /> */}
+                <span className="text-sm font-medium text-gray-500">{formattedDate}</span>
             </div>
 
             {/* Right: Stats, Status & Profile */}
